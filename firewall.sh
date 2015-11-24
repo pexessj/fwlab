@@ -49,6 +49,11 @@ iptables -P FORWARD DROP
 iptables -A INPUT -p tcp -s 0/0 -d $WAN1 --dport 22 -j ACCEPT 
 iptables -A OUTPUT -p tcp -s $WAN1 -d 0/0 --dport $PA -j ACCEPT 
 
+# Accepts SSH connections to the internet.
+
+iptables -A INPUT -p tcp -s 0/0 --sport 22 -d $WAN1 --dport $PA -j ACCEPT
+iptables -A OUTPUT -p tcp -s $WAN1 --sport $PA -d 0/0 --dport 22 -j ACCEPT
+
 # Accepts HTTP connections to the internet.
 
 iptables -A INPUT -p tcp -s 0/0 --sport 80 -d $WAN1 --dport $PA -j ACCEPT
