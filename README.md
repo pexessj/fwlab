@@ -1,9 +1,10 @@
 
-# Firewall Script - Developed only for my lab tests
+# Firewall Script
+# Developed only for my lab tests
 
 version: 2015112401
 
 Created by Matheus Carino
-eu@matheuscarino.com.br
-http://www.matheuscarino.com.br
-http://www.github.com/pexessj
+Email: eu@matheuscarino.com.br
+Website: http://www.matheuscarino.com.br
+Github: http://www.github.com/pexessj
