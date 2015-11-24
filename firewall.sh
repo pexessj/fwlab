@@ -108,7 +108,7 @@ $0 start
 
 *)
 
-echo 'Please on of the following "START | STOP | RESTART"'
+echo 'Please use one of the following "START | STOP | RESTART"'
 
 ;;
 
