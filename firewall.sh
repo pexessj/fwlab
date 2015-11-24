@@ -69,10 +69,31 @@ iptables -A OUTPUT -p tcp -s $WAN1 --sport $PA -d 0/0 --dport 443 -j ACCEPT
 iptables -A INPUT -p udp -s 0/0 --sport 53 -d $WAN1 --dport $PA -j ACCEPT
 iptables -A OUTPUT -p udp -s $WAN1 --sport $PA -d 0/0 --dport 53 -j ACCEPT
 
-# Accepts PING connections to the internet.
+# Accepts any ICMP connections to the internet.
 
 iptables -A INPUT -p icmp -s 0/0 -d $WAN1 -j ACCEPT
 iptables -A OUTPUT -p icmp -s $WAN1 -d 0/0 -j ACCEPT
+
+# NAT configuration for local hosts access to the internet
+iptables -t nat -I POSTROUTING -o eth0 -s $LAN -j MASQUERADE
+
+# Accepts HTTP,HTTPS,FTP,SSH connections from local hosts to the internet.
+for tcp_service in 20 21 22 80 443
+do
+iptables -A FORWARD -p tcp --sport $tcp_service -s 0/0 -d $LAN --dport $PA -j ACCEPT
+iptables -A FORWARD -p tcp --sport $PA -s $LAN -d 0/0 --dport $tcp_service -j ACCEPT
+done
+
+# Accepts DNS connections from local hosts to the internet.
+for udp_service in 53
+do
+iptables -A FORWARD -p udp --sport $udp_service -s 0/0 -d $LAN --dport $PA -j ACCEPT
+iptables -A FORWARD -p udp --sport $PA -s $LAN -d 0/0 --dport $udp_service -j ACCEPT
+done
+
+# Accepts any ICMP connections from local hosts to the internet.
+iptables -A FORWARD -p icmp -s 0/0 -d $LAN -j ACCEPT
+iptables -A FORWARD -p icmp -s $LAN -d 0/0 -j ACCEPT
 
 ;;
 
