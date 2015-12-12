@@ -16,6 +16,7 @@ WAN2=""
 FW="172.16.0.1"
 LAN="172.16.0.0/24"
 PA="1024:65535"
+SALT="172.16.0.2"
 
 ## Rules
 
@@ -49,10 +50,12 @@ iptables -P FORWARD DROP
 iptables -A INPUT -p tcp -s 0/0 -d $WAN1 --dport 22 -j ACCEPT 
 iptables -A OUTPUT -p tcp -s $WAN1 -d 0/0 --dport $PA -j ACCEPT 
 
-# Accepts SSH connections to the internet.
+# Accepts SSH connections to anywhere.
 
-iptables -A INPUT -p tcp -s 0/0 --sport 22 -d $WAN1 --dport $PA -j ACCEPT
-iptables -A OUTPUT -p tcp -s $WAN1 --sport $PA -d 0/0 --dport 22 -j ACCEPT
+iptables -A INPUT -p tcp --sport 22 --dport $PA -j ACCEPT
+iptables -A OUTPUT -p tcp --sport $PA --dport 22 -j ACCEPT
+iptables -A INPUT -p tcp --sport 52000 --dport $PA -j ACCEPT
+iptables -A OUTPUT -p tcp --sport $PA --dport 52000 -j ACCEPT
 
 # Accepts HTTP connections to the internet.
 
@@ -69,12 +72,17 @@ iptables -A OUTPUT -p tcp -s $WAN1 --sport $PA -d 0/0 --dport 443 -j ACCEPT
 iptables -A INPUT -p udp -s 0/0 --sport 53 -d $WAN1 --dport $PA -j ACCEPT
 iptables -A OUTPUT -p udp -s $WAN1 --sport $PA -d 0/0 --dport 53 -j ACCEPT
 
-# Accepts any ICMP connections to the internet.
+# Accepts any ICMP connections to the anywhere.
 
-iptables -A INPUT -p icmp -s 0/0 -d $WAN1 -j ACCEPT
-iptables -A OUTPUT -p icmp -s $WAN1 -d 0/0 -j ACCEPT
+iptables -A OUTPUT -p icmp -d 0/0 -j ACCEPT
+iptables -A INPUT -p icmp -d 127.0.0.1 -j ACCEPT
+iptables -A INPUT -p icmp -d $WAN1 -j ACCEPT
+iptables -A INPUT -p icmp -d $WAN2 -j ACCEPT
+iptables -A INPUT -p icmp -d $FW -j ACCEPT
+
 
 # NAT configuration for local hosts access to the internet
+
 iptables -t nat -I POSTROUTING -o eth0 -s $LAN -j MASQUERADE
 
 # Accepts HTTP,HTTPS,FTP,SSH connections from local hosts to the internet.
