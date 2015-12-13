@@ -110,7 +110,6 @@ iptables -A INPUT -p icmp -d $WAN1 -j ACCEPT
 #iptables -A INPUT -p icmp -d $WAN2 -j ACCEPT
 iptables -A INPUT -p icmp -d $FW -j ACCEPT
 
-
 # NAT configuration for local hosts access to the internet
 
 iptables -t nat -I POSTROUTING -o eth0 -s $LAN -j MASQUERADE
@@ -132,6 +131,14 @@ done
 # Accepts any ICMP connections from local hosts to the internet.
 iptables -A FORWARD -p icmp -s 0/0 -d $LAN -j ACCEPT
 iptables -A FORWARD -p icmp -s $LAN -d 0/0 -j ACCEPT
+
+# Redirect all UDP connections on port 53 to DMZ host.
+
+iptables -A INPUT -p udp --sport 53 -s $DMZ -d $FW --dport $PA -j ACCEPT
+iptables -A OUTPUT -p udp --sport $PA -s $FW -d $DMZ --dport 53 -j ACCEPT
+iptables -A FORWARD -p udp --sport $PA -s 0/0 -d $DMZ --dport 53 -j ACCEPT
+iptables -A FORWARD -p udp --sport 53 -s $DMZ -d 0/0 --dport $PA -j ACCEPT
+iptables -t nat -A PREROUTING -p udp --sport $PA -s 0/0 -d $WAN1 --dport 53 -j DNAT --to-destination $DMZ:53
 
 ;;
 
