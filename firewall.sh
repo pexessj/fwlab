@@ -17,6 +17,7 @@ FW="172.16.0.1"
 LAN="172.16.0.0/24"
 PA="1024:65535"
 SALT="172.16.0.2"
+DMZ="172.16.0.3"
 
 ## Rules
 
@@ -54,8 +55,37 @@ iptables -A OUTPUT -p tcp -s $WAN1 -d 0/0 --dport $PA -j ACCEPT
 
 iptables -A INPUT -p tcp --sport 22 --dport $PA -j ACCEPT
 iptables -A OUTPUT -p tcp --sport $PA --dport 22 -j ACCEPT
-iptables -A INPUT -p tcp --sport 52000 --dport $PA -j ACCEPT
-iptables -A OUTPUT -p tcp --sport $PA --dport 52000 -j ACCEPT
+
+# Allows SSH connections to SALTMASTER host
+
+iptables -A INPUT -p tcp -s $SALT --sport 52000 --dport $PA -j ACCEPT
+iptables -A OUTPUT -p tcp --sport $PA -d $SALT --dport 52000 -j ACCEPT
+
+# Redirect SSH connection on port 52000 to SALT host on port 52000
+
+iptables -A INPUT -p tcp -s 0/0 --sport $PA -d $SALT --dport 52000 -j ACCEPT
+iptables -A OUTPUT -p tcp --sport 52000 -s $SALT -d 0/0 --dport $PA -j ACCEPT
+iptables -A FORWARD -p tcp --sport $PA -s 0/0 -d $SALT --dport 52000 -j ACCEPT
+iptables -A FORWARD -p tcp --sport 52000 -s $SALT -d 0/0 --dport $PA -j ACCEPT
+iptables -t nat -A PREROUTING -p tcp --sport $PA -s 0/0 -d $WAN1 --dport 52000 -j DNAT --to-destination $SALT:52000
+
+# Allows SSH connections to DMZ host
+
+iptables -A INPUT -p tcp -s $DMZ --sport 53000 --dport $PA -j ACCEPT
+iptables -A OUTPUT -p tcp --sport $PA -d $DMZ --dport 53000 -j ACCEPT
+
+# Redirect SSH connection on port 53000 to DMZ host on port 53000
+
+iptables -A INPUT -p tcp -s 0/0 --sport $PA -d $DMZ --dport 53000 -j ACCEPT
+iptables -A OUTPUT -p tcp --sport 53000 -s $DMZ -d 0/0 --dport $PA -j ACCEPT
+iptables -A FORWARD -p tcp --sport $PA -s 0/0 -d $DMZ --dport 53000 -j ACCEPT
+iptables -A FORWARD -p tcp --sport 53000 -s $DMZ -d 0/0 --dport $PA -j ACCEPT
+iptables -t nat -A PREROUTING -p tcp --sport $PA -s 0/0 -d $WAN1 --dport 53000 -j DNAT --to-destination $DMZ:53000
+
+# Accepts DHCP connections from local network.
+
+iptables -A INPUT -p udp -i eth1 --sport 67:68 --dport 67:68 -j ACCEPT
+iptables -A OUTPUT -p udp -o eth1 --sport 67:68 --dport 67:68 -j ACCEPT
 
 # Accepts HTTP connections to the internet.
 
@@ -77,7 +107,7 @@ iptables -A OUTPUT -p udp -s $WAN1 --sport $PA -d 0/0 --dport 53 -j ACCEPT
 iptables -A OUTPUT -p icmp -d 0/0 -j ACCEPT
 iptables -A INPUT -p icmp -d 127.0.0.1 -j ACCEPT
 iptables -A INPUT -p icmp -d $WAN1 -j ACCEPT
-iptables -A INPUT -p icmp -d $WAN2 -j ACCEPT
+#iptables -A INPUT -p icmp -d $WAN2 -j ACCEPT
 iptables -A INPUT -p icmp -d $FW -j ACCEPT
 
 
