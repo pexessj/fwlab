@@ -18,6 +18,7 @@ LAN="172.16.0.0/24"
 PA="1024:65535"
 SALT="172.16.0.2"
 DMZ="172.16.0.3"
+SLAVE="172.16.0.9"
 
 ## Rules
 
@@ -82,10 +83,28 @@ iptables -A FORWARD -p tcp --sport $PA -s 0/0 -d $DMZ --dport 53000 -j ACCEPT
 iptables -A FORWARD -p tcp --sport 53000 -s $DMZ -d 0/0 --dport $PA -j ACCEPT
 iptables -t nat -A PREROUTING -p tcp --sport $PA -s 0/0 -d $WAN1 --dport 53000 -j DNAT --to-destination $DMZ:53000
 
+# Allows SSH connections to SLAVE host
+
+iptables -A INPUT -p tcp -s $SLAVE --sport 59000 --dport $PA -j ACCEPT
+iptables -A OUTPUT -p tcp --sport $PA -d $SLAVE --dport 59000 -j ACCEPT
+
+# Redirect SSH connection on port 59000 to SLAVE host on port 59000
+
+iptables -A INPUT -p tcp -s 0/0 --sport $PA -d $SLAVE --dport 59000 -j ACCEPT
+iptables -A OUTPUT -p tcp --sport 59000 -s $SLAVE -d 0/0 --dport $PA -j ACCEPT
+iptables -A FORWARD -p tcp --sport $PA -s 0/0 -d $SLAVE --dport 59000 -j ACCEPT
+iptables -A FORWARD -p tcp --sport 59000 -s $SLAVE -d 0/0 --dport $PA -j ACCEPT
+iptables -t nat -A PREROUTING -p tcp --sport $PA -s 0/0 -d $WAN1 --dport 59000 -j DNAT --to-destination $SLAVE:59000
+
 # Accepts DHCP connections from local network.
 
-iptables -A INPUT -p udp -i eth1 --sport 67:68 --dport 67:68 -j ACCEPT
-iptables -A OUTPUT -p udp -o eth1 --sport 67:68 --dport 67:68 -j ACCEPT
+iptables -A INPUT -p udp --sport 67:68 --dport 67:68 -j ACCEPT
+iptables -A OUTPUT -p udp --sport 67:68 --dport 67:68 -j ACCEPT
+
+# Allow FW connect to SALTMASTER.
+
+iptables -A INPUT -p tcp -s $SALT --sport 4505:4506 --dport $PA -j ACCEPT
+iptables -A OUTPUT -p tcp --sport $PA -d $SALT --dport 4505:4506 -j ACCEPT
 
 # Accepts HTTP connections to the internet.
 
